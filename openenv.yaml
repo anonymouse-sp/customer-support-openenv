@@ -1,0 +1,23 @@
+name: customer-support-chat-environment
+version: 0.1.0
+description: OpenEnv-compatible environment for customer support complaint handling.
+entrypoint:
+  type: http
+  base_url: http://localhost:7860
+  endpoints:
+    reset: /reset
+    step: /step
+    state: /state
+models:
+  reset_request: ResetRequest
+  reset_response: ResetResponse
+  step_request: StepRequest
+  step_response: StepResponse
+  state_response: StateResponse
+tasks:
+  - id: easy_wrong_item
+    difficulty: easy
+  - id: medium_billing_double_charge
+    difficulty: medium
+  - id: hard_refund_delayed_shipment
+    difficulty: hard
