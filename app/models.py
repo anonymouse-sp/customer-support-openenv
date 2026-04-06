@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -19,7 +19,8 @@ class Scenario(BaseModel):
 
 
 class ResetRequest(BaseModel):
-    task_id: str
+    task_id: Optional[str] = None
+    input: Optional[Any] = None
 
 
 class ResetResponse(BaseModel):
@@ -29,7 +30,8 @@ class ResetResponse(BaseModel):
 
 
 class StepRequest(BaseModel):
-    action: str = Field(min_length=1, description="Agent response text")
+    action: Optional[str] = Field(default=None, min_length=1, description="Agent response text")
+    input: Optional[Any] = None
 
 
 class ScoreBreakdown(BaseModel):
