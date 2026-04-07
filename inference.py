@@ -10,14 +10,15 @@ from openai import OpenAI
 
 load_dotenv()
 
-API_BASE_URL = os.getenv("API_BASE_URL")
-MODEL_NAME = os.getenv("MODEL_NAME")
+DEFAULT_API_BASE_URL = "https://router.huggingface.co/v1"
+DEFAULT_MODEL_NAME = "Qwen/Qwen2.5-7B-Instruct"
+
+API_BASE_URL = os.getenv("API_BASE_URL", DEFAULT_API_BASE_URL)
+MODEL_NAME = os.getenv("MODEL_NAME", DEFAULT_MODEL_NAME)
 HF_TOKEN = os.getenv("HF_TOKEN")
 ENV_BASE_URL = os.getenv("ENV_BASE_URL", "http://localhost:7860")
 
 REQUIRED_ENV = {
-    "API_BASE_URL": API_BASE_URL,
-    "MODEL_NAME": MODEL_NAME,
     "HF_TOKEN": HF_TOKEN,
 }
 
@@ -32,8 +33,8 @@ def validate_env() -> None:
         raise RuntimeError(f"Missing environment variables: {', '.join(missing)}")
 
 
-def _required_env(name: str) -> str:
-    value = os.getenv(name)
+def _required_env(name: str, default: str | None = None) -> str:
+    value = os.getenv(name, default)
     if not value:
         raise RuntimeError(f"Missing environment variable: {name}")
     return value
@@ -41,7 +42,10 @@ def _required_env(name: str) -> str:
 
 def create_client() -> OpenAI:
     # Required by problem statement: use OpenAI client with API_BASE_URL and HF token.
-    return OpenAI(base_url=_required_env("API_BASE_URL"), api_key=_required_env("HF_TOKEN"))
+    return OpenAI(
+        base_url=_required_env("API_BASE_URL", DEFAULT_API_BASE_URL),
+        api_key=_required_env("HF_TOKEN"),
+    )
 
 
 def build_task_prompt(task_id: str) -> str:
@@ -73,7 +77,7 @@ def generate_response(client: OpenAI, task_id: str, customer_message: str) -> st
     prompt = build_task_prompt(task_id)
 
     completion = client.chat.completions.create(
-        model=_required_env("MODEL_NAME"),
+        model=_required_env("MODEL_NAME", DEFAULT_MODEL_NAME),
         messages=[
             {"role": "system", "content": prompt},
             {"role": "user", "content": customer_message},
@@ -107,8 +111,8 @@ def run_task(http: httpx.Client, client: OpenAI, task_id: str) -> dict[str, Any]
 def main() -> None:
     validate_env()
     client = create_client()
-    model_name = _required_env("MODEL_NAME")
-    api_base_url = _required_env("API_BASE_URL")
+    model_name = _required_env("MODEL_NAME", DEFAULT_MODEL_NAME)
+    api_base_url = _required_env("API_BASE_URL", DEFAULT_API_BASE_URL)
 
     with httpx.Client() as http:
         tasks_resp = http.get(f"{ENV_BASE_URL}/tasks", timeout=30)
