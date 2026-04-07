@@ -11,11 +11,24 @@ class CustomerSupportEnv:
         self.step_count = 0
         self.done = True
         self.latest_score: ScoreBreakdown | None = None
+        self._fallback_task_index = 0
 
     def available_tasks(self) -> list[str]:
         return list(SCENARIOS.keys())
 
-    def reset(self, task_id: str) -> dict:
+    def _next_fallback_task_id(self) -> str:
+        tasks = self.available_tasks()
+        if not tasks:
+            raise ValueError("No tasks available")
+
+        task_id = tasks[self._fallback_task_index % len(tasks)]
+        self._fallback_task_index += 1
+        return task_id
+
+    def reset(self, task_id: str | None = None) -> dict:
+        if not task_id:
+            task_id = self._next_fallback_task_id()
+
         if task_id not in SCENARIOS:
             raise ValueError(f"Unknown task_id: {task_id}")
 

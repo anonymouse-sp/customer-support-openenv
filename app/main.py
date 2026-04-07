@@ -53,11 +53,6 @@ def tasks() -> dict:
 def reset(payload: Optional[ResetRequest] = None) -> ResetResponse:
     try:
         task_id = _parse_reset_task_id(payload)
-        if not task_id:
-            tasks = env.available_tasks()
-            if not tasks:
-                raise ValueError("No tasks available")
-            task_id = tasks[0]
         data = env.reset(task_id)
         return ResetResponse(**data)
     except ValueError as exc:
