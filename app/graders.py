@@ -1,6 +1,9 @@
 from app.models import Scenario
 
 
+EPSILON = 1e-6
+
+
 POSITIVE_TONE_HINTS = {
     "apologize": ["sorry", "apologize", "apologies"],
     "empathetic": ["understand", "frustrating", "inconvenience", "thank you for your patience"],
@@ -17,6 +20,11 @@ POSITIVE_TONE_HINTS = {
 def _contains_any(text: str, keywords: list[str]) -> bool:
     text_lower = text.lower()
     return any(k in text_lower for k in keywords)
+
+
+def _strict_unit_interval(value: float) -> float:
+    # Phase-2 validator expects scores strictly between 0 and 1.
+    return max(EPSILON, min(1.0 - EPSILON, value))
 
 
 def score_correctness(response: str, scenario: Scenario) -> float:
@@ -71,7 +79,7 @@ def score_correctness(response: str, scenario: Scenario) -> float:
         if discouraged in response_lower:
             penalty += 0.2
 
-    return max(0.0, min(1.0, required_score - penalty))
+    return _strict_unit_interval(required_score - penalty)
 
 
 def score_tone(response: str, scenario: Scenario) -> float:
@@ -93,12 +101,12 @@ def score_tone(response: str, scenario: Scenario) -> float:
     if toxic_hit:
         score = max(0.0, score - 0.5)
 
-    return max(0.0, min(1.0, score))
+    return _strict_unit_interval(score)
 
 
 def grade_response(response: str, scenario: Scenario) -> tuple[float, float, float]:
     correctness = score_correctness(response, scenario)
     tone = score_tone(response, scenario)
     overall = 0.7 * correctness + 0.3 * tone
-    overall = max(0.0, min(1.0, overall))
+    overall = _strict_unit_interval(overall)
     return correctness, tone, overall
