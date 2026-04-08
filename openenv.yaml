@@ -17,10 +17,10 @@ models:
 tasks:
   - id: easy_wrong_item
     difficulty: easy
-    grader: app.graders:grade_response
+    grader: app.graders:grade_easy_wrong_item
   - id: medium_billing_double_charge
     difficulty: medium
-    grader: app.graders:grade_response
+    grader: app.graders:grade_medium_billing_double_charge
   - id: hard_refund_delayed_shipment
     difficulty: hard
-    grader: app.graders:grade_response
+    grader: app.graders:grade_hard_refund_delayed_shipment
