@@ -1,6 +1,11 @@
+spec_version: 1
 name: customer-support-chat-environment
 version: 0.1.0
 description: OpenEnv-compatible environment for customer support complaint handling.
+type: space
+runtime: fastapi
+app: server.app:app
+port: 7860
 entrypoint:
   type: http
   base_url: http://localhost:7860
