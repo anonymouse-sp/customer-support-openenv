@@ -77,7 +77,8 @@ class CustomerSupportEnv:
                 "customer_message": self.current_scenario.customer_message,
                 "assistant_response": action,
             },
-            "score": self.latest_score.model_dump(),
+            "score": overall,
+            "scores": self.latest_score.model_dump(),
             "info": {
                 "step_count": str(self.step_count),
                 "max_steps": str(self.current_scenario.max_steps),
