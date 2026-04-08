@@ -112,9 +112,14 @@ def run_task(http: httpx.Client, client: OpenAI, task_id: str) -> dict[str, Any]
         }
 
     return {
+        "task": task_id,
         "task_id": task_id,
         "reward": step_data["reward"],
         "score": numeric_score,
+        "grader_score": numeric_score,
+        "overall": numeric_score,
+        "correctness": score_payload["correctness"],
+        "tone": score_payload["tone"],
         "scores": score_payload,
         "done": step_data["done"],
     }
@@ -151,9 +156,12 @@ def main() -> None:
                 "STEP",
                 {
                     "index": index,
+                    "task": task_id,
                     "task_id": task_id,
                     "reward": result["reward"],
                     "score": result["score"],
+                    "grader_score": result["grader_score"],
+                    "overall": result["overall"],
                     "correctness": result["scores"]["correctness"],
                     "tone": result["scores"]["tone"],
                     "duration_sec": round(time.time() - task_start, 3),
