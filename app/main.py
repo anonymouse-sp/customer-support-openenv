@@ -37,23 +37,25 @@ def _parse_step_action(payload: StepRequest) -> str:
 
 @app.get("/")
 def root() -> dict:
-    tasks = env.available_tasks()
+    task_ids = env.available_tasks()
+    tasks_with_graders = env.available_tasks_with_graders()
     return {
         "service": "customer-support-openenv",
         "status": "ok",
-        "tasks": tasks,
-        "task_ids": tasks,
-        "tasks_with_graders": env.available_tasks_with_graders(),
+        "tasks": tasks_with_graders,
+        "task_ids": task_ids,
+        "tasks_with_graders": tasks_with_graders,
     }
 
 
 @app.get("/tasks")
 def tasks() -> dict:
     task_ids = env.available_tasks()
+    tasks_with_graders = env.available_tasks_with_graders()
     return {
-        "tasks": task_ids,
+        "tasks": tasks_with_graders,
         "task_ids": task_ids,
-        "tasks_with_graders": env.available_tasks_with_graders(),
+        "tasks_with_graders": tasks_with_graders,
     }
 
 

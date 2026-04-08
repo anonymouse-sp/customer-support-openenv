@@ -49,6 +49,17 @@ def _required_env(name: str, default: str | None = None) -> str:
     return value
 
 
+def _extract_task_id(task_item: Any) -> str:
+    if isinstance(task_item, str):
+        return task_item
+    if isinstance(task_item, dict):
+        for key in ("id", "task_id", "task"):
+            value = task_item.get(key)
+            if isinstance(value, str) and value:
+                return value
+    raise RuntimeError(f"Invalid task entry from /tasks: {task_item!r}")
+
+
 def create_client() -> OpenAI:
     # Required by problem statement: use OpenAI client with API_BASE_URL and HF token.
     return OpenAI(
@@ -150,7 +161,9 @@ def main() -> None:
     with httpx.Client() as http:
         tasks_resp = http.get(f"{ENV_BASE_URL}/tasks", timeout=30)
         tasks_resp.raise_for_status()
-        tasks = tasks_resp.json().get("tasks", [])
+        payload = tasks_resp.json()
+        tasks_raw = payload.get("task_ids") or payload.get("tasks", [])
+        tasks = [_extract_task_id(task_item) for task_item in tasks_raw]
 
         start_t = time.time()
         print_log(
