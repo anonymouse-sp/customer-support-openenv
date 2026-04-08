@@ -1,7 +1,8 @@
 from app.models import Scenario
 
 
-EPSILON = 1e-6
+MIN_STRICT_SCORE = 0.05
+MAX_STRICT_SCORE = 0.95
 
 
 POSITIVE_TONE_HINTS = {
@@ -24,7 +25,7 @@ def _contains_any(text: str, keywords: list[str]) -> bool:
 
 def _strict_unit_interval(value: float) -> float:
     # Phase-2 validator expects scores strictly between 0 and 1.
-    return max(EPSILON, min(1.0 - EPSILON, value))
+    return max(MIN_STRICT_SCORE, min(MAX_STRICT_SCORE, value))
 
 
 def score_correctness(response: str, scenario: Scenario) -> float:
