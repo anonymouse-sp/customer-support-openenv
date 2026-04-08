@@ -4,8 +4,8 @@ from app.models import Scenario
 from app.scenarios import SCENARIOS
 
 
-MIN_STRICT_SCORE = 0.05
-MAX_STRICT_SCORE = 0.95
+MIN_STRICT_SCORE = 0.11
+MAX_STRICT_SCORE = 0.89
 
 
 POSITIVE_TONE_HINTS = {
