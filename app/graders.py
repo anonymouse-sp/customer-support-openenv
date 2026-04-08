@@ -1,4 +1,7 @@
+from typing import Any
+
 from app.models import Scenario
+from app.scenarios import SCENARIOS
 
 
 MIN_STRICT_SCORE = 0.05
@@ -111,3 +114,40 @@ def grade_response(response: str, scenario: Scenario) -> tuple[float, float, flo
     overall = 0.7 * correctness + 0.3 * tone
     overall = _strict_unit_interval(overall)
     return correctness, tone, overall
+
+
+def _extract_action_text(action: Any, observation: Any | None = None) -> str:
+    if isinstance(action, str):
+        return action
+    if isinstance(action, dict):
+        for key in ("action", "response", "assistant_response", "text", "content"):
+            value = action.get(key)
+            if isinstance(value, str) and value.strip():
+                return value
+
+    if isinstance(observation, dict):
+        for key in ("assistant_response", "action", "response", "text", "content"):
+            value = observation.get(key)
+            if isinstance(value, str) and value.strip():
+                return value
+
+    return str(action)
+
+
+def _grade_task(task_id: str, action: Any, observation: Any | None = None) -> float:
+    scenario = SCENARIOS[task_id]
+    response = _extract_action_text(action, observation)
+    _correctness, _tone, overall = grade_response(response, scenario)
+    return _strict_unit_interval(overall)
+
+
+def grade_easy_wrong_item(action: Any, observation: Any | None = None) -> float:
+    return _grade_task("easy_wrong_item", action, observation)
+
+
+def grade_medium_billing_double_charge(action: Any, observation: Any | None = None) -> float:
+    return _grade_task("medium_billing_double_charge", action, observation)
+
+
+def grade_hard_refund_delayed_shipment(action: Any, observation: Any | None = None) -> float:
+    return _grade_task("hard_refund_delayed_shipment", action, observation)
