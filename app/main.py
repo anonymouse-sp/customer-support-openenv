@@ -42,7 +42,7 @@ def root() -> dict:
     return {
         "service": "customer-support-openenv",
         "status": "ok",
-        "tasks": tasks_with_graders,
+        "tasks": task_ids,
         "task_ids": task_ids,
         "tasks_with_graders": tasks_with_graders,
     }
@@ -53,7 +53,7 @@ def tasks() -> dict:
     task_ids = env.available_tasks()
     tasks_with_graders = env.available_tasks_with_graders()
     return {
-        "tasks": tasks_with_graders,
+        "tasks": task_ids,
         "task_ids": task_ids,
         "tasks_with_graders": tasks_with_graders,
     }
