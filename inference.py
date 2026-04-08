@@ -136,7 +136,8 @@ def run_task(http: httpx.Client, client: OpenAI, task_id: str) -> dict[str, Any]
     return {
         "task_id": task_id,
         "score": numeric_score,
-        "grader": "app.graders",
+        "task_score": numeric_score,
+        "grader": f"app.graders:grade_{task_id}",
         "grader_enabled": True,
         "reward": _normalize_strict_score(float(step_data.get("reward", numeric_score))),
         "scores": score_payload,
@@ -179,6 +180,7 @@ def main() -> None:
                     "index": index,
                     "task_id": task_id,
                     "score": result["score"],
+                    "task_score": result["task_score"],
                     "grader": result["grader"],
                     "grader_enabled": True,
                     "reward": result["reward"],
@@ -195,7 +197,13 @@ def main() -> None:
                 "average_reward": round(avg_reward, 4),
                 "total_duration_sec": round(time.time() - start_t, 3),
                 "results": [
-                    {"task_id": r["task_id"], "score": r["score"], "grader": r["grader"]}
+                    {
+                        "task_id": r["task_id"],
+                        "score": r["score"],
+                        "task_score": r["task_score"],
+                        "grader": r["grader"],
+                        "grader_enabled": True,
+                    }
                     for r in results
                 ],
                 "task_scores": {r["task_id"]: r["score"] for r in results},
