@@ -25,10 +25,10 @@ REQUIRED_ENV = {
 
 def _normalize_strict_score(value: float) -> float:
     # Keep score strictly inside (0, 1) even after parser fallbacks.
-    if value <= 0.0:
-        return 0.05
-    if value >= 1.0:
-        return 0.95
+    if value <= 0.11:
+        return 0.11
+    if value >= 0.89:
+        return 0.89
     return value
 
 
