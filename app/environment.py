@@ -16,6 +16,17 @@ class CustomerSupportEnv:
     def available_tasks(self) -> list[str]:
         return list(SCENARIOS.keys())
 
+    def available_tasks_with_graders(self) -> list[dict]:
+        return [
+            {
+                "id": task_id,
+                "difficulty": task_id.split("_")[0],
+                "grader": f"app.graders:grade_{task_id}",
+                "grader_enabled": True,
+            }
+            for task_id in self.available_tasks()
+        ]
+
     def _next_fallback_task_id(self) -> str:
         tasks = self.available_tasks()
         if not tasks:
