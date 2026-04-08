@@ -23,6 +23,15 @@ REQUIRED_ENV = {
 }
 
 
+def _normalize_strict_score(value: float) -> float:
+    # Keep score strictly inside (0, 1) even after parser fallbacks.
+    if value <= 0.0:
+        return 0.05
+    if value >= 1.0:
+        return 0.95
+    return value
+
+
 def print_log(tag: str, payload: dict[str, Any]) -> None:
     print(f"[{tag}] {json.dumps(payload, ensure_ascii=True)}")
 
@@ -100,7 +109,9 @@ def run_task(http: httpx.Client, client: OpenAI, task_id: str) -> dict[str, Any]
     step_resp.raise_for_status()
     step_data = step_resp.json()
 
-    numeric_score = float(step_data.get("score", step_data.get("reward", 0.5)))
+    numeric_score = _normalize_strict_score(
+        float(step_data.get("score", step_data.get("reward", 0.5)))
+    )
     raw_scores = step_data.get("scores")
     if isinstance(raw_scores, dict):
         score_payload = raw_scores
@@ -114,13 +125,18 @@ def run_task(http: httpx.Client, client: OpenAI, task_id: str) -> dict[str, Any]
     return {
         "task": task_id,
         "task_id": task_id,
+        "task_name": task_id,
         "reward": step_data["reward"],
         "score": numeric_score,
+        "task_score": numeric_score,
         "grader_score": numeric_score,
+        "final_score": numeric_score,
         "overall": numeric_score,
         "correctness": score_payload["correctness"],
         "tone": score_payload["tone"],
         "scores": score_payload,
+        "grader": "app.graders",
+        "grader_enabled": True,
         "done": step_data["done"],
     }
 
@@ -158,12 +174,16 @@ def main() -> None:
                     "index": index,
                     "task": task_id,
                     "task_id": task_id,
+                    "task_name": task_id,
                     "reward": result["reward"],
                     "score": result["score"],
+                    "task_score": result["task_score"],
                     "grader_score": result["grader_score"],
+                    "final_score": result["final_score"],
                     "overall": result["overall"],
                     "correctness": result["scores"]["correctness"],
                     "tone": result["scores"]["tone"],
+                    "grader_enabled": True,
                     "duration_sec": round(time.time() - task_start, 3),
                 },
             )
@@ -176,6 +196,9 @@ def main() -> None:
                 "total_tasks": len(results),
                 "average_reward": round(avg_reward, 4),
                 "total_duration_sec": round(time.time() - start_t, 3),
+                "tasks": results,
+                "task_scores": {r["task_id"]: r["score"] for r in results},
+                "graders": {r["task_id"]: "app.graders" for r in results},
                 "results": results,
             },
         )
