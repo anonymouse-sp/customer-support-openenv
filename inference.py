@@ -100,10 +100,17 @@ def run_task(http: httpx.Client, client: OpenAI, task_id: str) -> dict[str, Any]
     step_resp.raise_for_status()
     step_data = step_resp.json()
 
+    raw_scores = step_data.get("scores")
+    if isinstance(raw_scores, dict):
+        score_payload = raw_scores
+    else:
+        numeric = float(step_data.get("score", step_data.get("reward", 0.5)))
+        score_payload = {"correctness": numeric, "tone": numeric, "overall": numeric}
+
     return {
         "task_id": task_id,
         "reward": step_data["reward"],
-        "score": step_data["score"],
+        "score": score_payload,
         "done": step_data["done"],
     }
 

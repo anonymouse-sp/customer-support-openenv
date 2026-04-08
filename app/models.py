@@ -44,7 +44,8 @@ class StepResponse(BaseModel):
     reward: float = Field(gt=0.0, lt=1.0)
     done: bool
     observation: Dict[str, str]
-    score: ScoreBreakdown
+    score: float = Field(gt=0.0, lt=1.0)
+    scores: ScoreBreakdown
     info: Dict[str, str]
 
 
