@@ -172,6 +172,15 @@ def main() -> None:
         results = []
         for index, task_id in enumerate(tasks, start=1):
             task_start = time.time()
+
+            print_log(
+                "START",
+                {
+                    "task_id": task_id,
+                    "index": index,
+                },
+            )
+
             result = run_task(http, client, task_id)
             results.append(result)
             print_log(
@@ -183,8 +192,20 @@ def main() -> None:
                     "task_score": result["task_score"],
                     "grader": result["grader"],
                     "grader_enabled": True,
+                    "action": "assistant response generated",
                     "reward": result["reward"],
+                    "done": result["done"],
                     "duration_sec": round(time.time() - task_start, 3),
+                },
+            )
+
+            print_log(
+                "END",
+                {
+                    "task_id": task_id,
+                    "final_reward": result["score"],
+                    "score": result["score"],
+                    "grader": result["grader"],
                 },
             )
 
