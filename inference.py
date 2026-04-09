@@ -37,12 +37,14 @@ GRADER_MAP = {
 
 
 def _normalize_strict_score(value: float) -> float:
-    # Keep score strictly inside (0, 1) even after parser fallbacks.
-    if value <= 0.15:
-        return 0.15
-    if value >= 0.85:
-        return 0.85
-    return value
+    # Force safe precision and keep scores strictly inside (0, 1).
+    value = float(value)
+    if value <= 0:
+        value = 0.2
+    elif value >= 1:
+        value = 0.8
+    value = round(value, 4)
+    return max(0.2, min(0.8, value))
 
 
 def print_log(tag: str, payload: dict[str, Any]) -> None:

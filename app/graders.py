@@ -4,8 +4,8 @@ from app.models import Scenario
 from app.scenarios import SCENARIOS
 
 
-MIN_STRICT_SCORE = 0.15
-MAX_STRICT_SCORE = 0.85
+MIN_STRICT_SCORE = 0.2
+MAX_STRICT_SCORE = 0.8
 SCORE_SMOOTHING = 0.1
 
 
@@ -29,6 +29,7 @@ def _contains_any(text: str, keywords: list[str]) -> bool:
 
 def _strict_unit_interval(value: float) -> float:
     # Phase-2 validator expects scores strictly between 0 and 1.
+    value = round(float(value), 4)
     return max(MIN_STRICT_SCORE, min(MAX_STRICT_SCORE, value))
 
 
