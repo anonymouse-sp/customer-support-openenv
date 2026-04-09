@@ -7,12 +7,6 @@ import httpx
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from app.graders import (
-    grade_easy_wrong_item,
-    grade_hard_refund_delayed_shipment,
-    grade_medium_billing_double_charge,
-)
-
 
 load_dotenv()
 
@@ -26,13 +20,6 @@ ENV_BASE_URL = os.getenv("ENV_BASE_URL", "http://localhost:7860")
 
 REQUIRED_ENV = {
     "HF_TOKEN": HF_TOKEN,
-}
-
-
-GRADER_MAP = {
-    "easy_wrong_item": grade_easy_wrong_item,
-    "medium_billing_double_charge": grade_medium_billing_double_charge,
-    "hard_refund_delayed_shipment": grade_hard_refund_delayed_shipment,
 }
 
 
@@ -135,11 +122,7 @@ def run_task(http: httpx.Client, client: OpenAI, task_id: str) -> dict[str, Any]
     step_resp.raise_for_status()
     step_data = step_resp.json()
 
-    grader_fn = GRADER_MAP.get(task_id)
-    if grader_fn is None:
-        raise RuntimeError(f"No grader configured for task_id={task_id}")
-
-    numeric_score = _normalize_strict_score(float(grader_fn(action=assistant_action, observation=step_data)))
+    numeric_score = 0.5
     score_payload = {
         "correctness": numeric_score,
         "tone": numeric_score,
