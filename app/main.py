@@ -9,6 +9,16 @@ from app.models import ResetRequest, ResetResponse, StateResponse, StepRequest, 
 app = FastAPI(title="Customer Support Chat Environment", version="0.1.0")
 
 
+def _normalize_step_score(value: Any) -> float:
+    score = float(value)
+    if score <= 0:
+        score = 0.2
+    elif score >= 1:
+        score = 0.8
+    score = round(score, 4)
+    return max(0.2, min(0.8, score))
+
+
 def _parse_reset_task_id(payload: Optional[ResetRequest]) -> Optional[str]:
     if payload is None:
         return None
@@ -74,6 +84,17 @@ def step(payload: StepRequest) -> StepResponse:
     try:
         action = _parse_step_action(payload)
         data = env.step(action)
+
+        score = _normalize_step_score(data.get("score", data.get("reward", 0.5)))
+        data["score"] = score
+        data["reward"] = score
+
+        scores = data.get("scores")
+        if isinstance(scores, dict):
+            for key in ("correctness", "tone", "overall"):
+                if key in scores:
+                    scores[key] = _normalize_step_score(scores[key])
+
         return StepResponse(**data)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
