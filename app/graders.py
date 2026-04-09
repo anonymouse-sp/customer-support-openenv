@@ -4,8 +4,9 @@ from app.models import Scenario
 from app.scenarios import SCENARIOS
 
 
-MIN_STRICT_SCORE = 0.11
-MAX_STRICT_SCORE = 0.89
+MIN_STRICT_SCORE = 0.15
+MAX_STRICT_SCORE = 0.85
+SCORE_SMOOTHING = 0.1
 
 
 POSITIVE_TONE_HINTS = {
@@ -76,7 +77,9 @@ def score_correctness(response: str, scenario: Scenario) -> float:
         if _contains_any(response_lower, keywords):
             required_hits += 1
 
-    required_score = required_hits / max(1, len(scenario.required_points))
+    required_score = (required_hits + SCORE_SMOOTHING) / (
+        len(scenario.required_points) + (2 * SCORE_SMOOTHING)
+    )
 
     penalty = 0.0
     for discouraged in scenario.discouraged_points:
@@ -101,9 +104,9 @@ def score_tone(response: str, scenario: Scenario) -> float:
     toxic_markers = ["stupid", "your fault", "can't help", "stop messaging"]
     toxic_hit = _contains_any(response_lower, toxic_markers)
 
-    score = hits / max(1, len(scenario.tone_requirements))
+    score = (hits + SCORE_SMOOTHING) / (len(scenario.tone_requirements) + (2 * SCORE_SMOOTHING))
     if toxic_hit:
-        score = max(0.0, score - 0.5)
+        score = max(MIN_STRICT_SCORE, score - 0.5)
 
     return _strict_unit_interval(score)
 

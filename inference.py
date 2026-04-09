@@ -38,10 +38,10 @@ GRADER_MAP = {
 
 def _normalize_strict_score(value: float) -> float:
     # Keep score strictly inside (0, 1) even after parser fallbacks.
-    if value <= 0.11:
-        return 0.11
-    if value >= 0.89:
-        return 0.89
+    if value <= 0.15:
+        return 0.15
+    if value >= 0.85:
+        return 0.85
     return value
 
 
