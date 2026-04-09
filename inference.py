@@ -31,7 +31,7 @@ def _normalize_strict_score(value: float) -> float:
     elif value >= 1:
         value = 0.8
     value = round(value, 4)
-    return max(0.2, min(0.8, value))
+    return max(0.21, min(0.79, value))
 
 
 def print_log(tag: str, payload: dict[str, Any]) -> None:
@@ -122,7 +122,7 @@ def run_task(http: httpx.Client, client: OpenAI, task_id: str) -> dict[str, Any]
     step_resp.raise_for_status()
     step_data = step_resp.json()
 
-    numeric_score = 0.5
+    numeric_score = _normalize_strict_score(step_data.get("score", 0.5))
     score_payload = {
         "correctness": numeric_score,
         "tone": numeric_score,

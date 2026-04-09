@@ -3,6 +3,7 @@ from typing import Any, Optional
 from fastapi import FastAPI, HTTPException
 
 from app.environment import env
+from app.graders import _strict_unit_interval
 from app.models import ResetRequest, ResetResponse, StateResponse, StepRequest, StepResponse
 
 
@@ -14,12 +15,7 @@ def _normalize_step_score(value: Any) -> float:
         score = float(value)
     except (TypeError, ValueError):
         score = 0.5
-    if score <= 0:
-        score = 0.2
-    elif score >= 1:
-        score = 0.8
-    score = round(score, 4)
-    return max(0.2, min(0.8, score))
+    return _strict_unit_interval(score)
 
 
 def _parse_reset_task_id(payload: Optional[ResetRequest]) -> Optional[str]:
@@ -89,7 +85,7 @@ def step(payload: StepRequest) -> StepResponse:
         data = env.step(action)
 
         # Keep a deterministic safe score for validator compatibility.
-        safe_score = 0.5
+        safe_score = _normalize_step_score(data.get("score", 0.5))
         data["score"] = safe_score
         data["reward"] = safe_score
         data["scores"] = {

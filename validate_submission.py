@@ -7,6 +7,8 @@ from pathlib import Path
 import httpx
 import yaml
 
+from app import graders
+
 
 ROOT = Path(__file__).resolve().parent
 PYTHON = ROOT / ".venv" / "Scripts" / "python.exe"
@@ -86,10 +88,42 @@ def validate_endpoints() -> tuple[bool, str]:
             reward = step.json().get("reward")
             if not isinstance(reward, (float, int)):
                 return False, f"FAIL reward type invalid for {task_id}"
-            if not (0.0 <= float(reward) <= 1.0):
-                return False, f"FAIL reward out of range for {task_id}: {reward}"
+            if not (0.0 < float(reward) < 1.0):
+                return False, f"FAIL reward must be strictly between 0 and 1 for {task_id}: {reward}"
 
     return True, "PASS endpoints/reset/step and reward range checks"
+
+
+def validate_task_graders() -> tuple[bool, str]:
+    yaml_path = ROOT / "openenv.yaml"
+    data = yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
+    tasks = data.get("tasks", [])
+    if not tasks:
+        return False, "FAIL no tasks found in openenv.yaml"
+
+    for task in tasks:
+        task_id = task["id"]
+        grader_name = task["grader"].split(":")[-1]
+        grader = getattr(graders, grader_name, None)
+        if grader is None:
+            return False, f"FAIL missing grader function for {task_id}: {grader_name}"
+
+        samples = [
+            "I am sorry about this. I will help fix it and review the issue right away. Please share your order ID or reference number so I can proceed with the next steps.",
+            "",
+            {"action": "Sorry for the inconvenience. I will investigate this and help resolve it. Please send the relevant reference details."},
+            {"messages": [{"role": "assistant", "content": "I am sorry for the issue. I will help resolve this and review the next steps. Please share your order or transaction reference."}]},
+        ]
+
+        for sample in samples:
+            try:
+                score = float(grader(sample))
+            except Exception as exc:
+                return False, f"FAIL grader runtime error for {task_id}: {exc}"
+            if not (0.0 < score < 1.0):
+                return False, f"FAIL grader score must be strictly between 0 and 1 for {task_id}: {score}"
+
+    return True, "PASS task graders return strict unit-interval scores"
 
 
 def validate_inference_runtime(max_sec: int = 1200) -> tuple[bool, str]:
@@ -130,6 +164,7 @@ def main() -> None:
             checks.append((False, "FAIL local server did not start in time"))
         else:
             checks.append(validate_endpoints())
+            checks.append(validate_task_graders())
             checks.append(validate_inference_runtime())
     finally:
         server.terminate()

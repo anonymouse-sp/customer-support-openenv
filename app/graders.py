@@ -42,6 +42,10 @@ def _strict_unit_interval(value: float) -> float:
     return round(value, 4)
 
 
+def _strict_mid_score(value: float = 0.5) -> float:
+    return _strict_unit_interval(value)
+
+
 def score_correctness(response: str, scenario: Scenario) -> float:
     response_lower = response.lower()
 
@@ -143,12 +147,30 @@ def _extract_action_text(action: Any, observation: Any | None = None) -> str:
             value = action.get(key)
             if isinstance(value, str) and value.strip():
                 return value
+        messages = action.get("messages")
+        if isinstance(messages, list):
+            for message in reversed(messages):
+                if not isinstance(message, dict):
+                    continue
+                role = message.get("role")
+                content = message.get("content")
+                if role == "assistant" and isinstance(content, str) and content.strip():
+                    return content
 
     if isinstance(observation, dict):
         for key in ("assistant_response", "action", "response", "text", "content"):
             value = observation.get(key)
             if isinstance(value, str) and value.strip():
                 return value
+        messages = observation.get("messages")
+        if isinstance(messages, list):
+            for message in reversed(messages):
+                if not isinstance(message, dict):
+                    continue
+                role = message.get("role")
+                content = message.get("content")
+                if role == "assistant" and isinstance(content, str) and content.strip():
+                    return content
 
     return str(action)
 
@@ -167,7 +189,7 @@ def _grade_task_compat(task_id: str, *args: Any, **kwargs: Any) -> float:
         return _grade_task(task_id, action, observation)
     except Exception:
         # Never fail validator due to grader runtime exceptions.
-        return 0.55
+        return _strict_mid_score(0.55)
 
 
 def grade_easy_wrong_item(*args: Any, **kwargs: Any) -> float:
