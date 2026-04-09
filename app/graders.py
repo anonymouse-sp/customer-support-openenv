@@ -6,7 +6,6 @@ from app.scenarios import SCENARIOS
 
 MIN_STRICT_SCORE = 0.2
 MAX_STRICT_SCORE = 0.8
-SCORE_SMOOTHING = 0.1
 
 
 POSITIVE_TONE_HINTS = {
@@ -29,8 +28,18 @@ def _contains_any(text: str, keywords: list[str]) -> bool:
 
 def _strict_unit_interval(value: float) -> float:
     # Phase-2 validator expects scores strictly between 0 and 1.
-    value = round(float(value), 4)
-    return max(MIN_STRICT_SCORE, min(MAX_STRICT_SCORE, value))
+    try:
+        value = float(value)
+    except (TypeError, ValueError):
+        return 0.5
+
+    if value <= 0:
+        value = MIN_STRICT_SCORE
+    elif value >= 1:
+        value = MAX_STRICT_SCORE
+
+    value = max(0.21, min(0.79, value))
+    return round(value, 4)
 
 
 def score_correctness(response: str, scenario: Scenario) -> float:
@@ -78,9 +87,7 @@ def score_correctness(response: str, scenario: Scenario) -> float:
         if _contains_any(response_lower, keywords):
             required_hits += 1
 
-    required_score = (required_hits + SCORE_SMOOTHING) / (
-        len(scenario.required_points) + (2 * SCORE_SMOOTHING)
-    )
+    required_score = (required_hits + 0.2) / (len(scenario.required_points) + 0.4)
 
     penalty = 0.0
     for discouraged in scenario.discouraged_points:
@@ -109,7 +116,7 @@ def score_tone(response: str, scenario: Scenario) -> float:
     toxic_markers = ["stupid", "your fault", "can't help", "stop messaging"]
     toxic_hit = _contains_any(response_lower, toxic_markers)
 
-    score = (hits + SCORE_SMOOTHING) / (len(scenario.tone_requirements) + (2 * SCORE_SMOOTHING))
+    score = (hits + 0.2) / (len(scenario.tone_requirements) + 0.4)
     if toxic_hit:
         score = max(MIN_STRICT_SCORE, score - 0.5)
 
@@ -120,6 +127,10 @@ def grade_response(response: str, scenario: Scenario) -> tuple[float, float, flo
     correctness = score_correctness(response, scenario)
     tone = score_tone(response, scenario)
     overall = 0.7 * correctness + 0.3 * tone
+    if overall <= 0:
+        overall = MIN_STRICT_SCORE
+    elif overall >= 1:
+        overall = MAX_STRICT_SCORE
     overall = _strict_unit_interval(overall)
     return correctness, tone, overall
 
