@@ -7,6 +7,12 @@ import httpx
 from dotenv import load_dotenv
 from openai import OpenAI
 
+from app.graders import (
+    grade_easy_wrong_item,
+    grade_hard_refund_delayed_shipment,
+    grade_medium_billing_double_charge,
+)
+
 
 load_dotenv()
 
@@ -23,12 +29,19 @@ REQUIRED_ENV = {
 }
 
 
+GRADER_MAP = {
+    "easy_wrong_item": grade_easy_wrong_item,
+    "medium_billing_double_charge": grade_medium_billing_double_charge,
+    "hard_refund_delayed_shipment": grade_hard_refund_delayed_shipment,
+}
+
+
 def _normalize_strict_score(value: float) -> float:
     # Keep score strictly inside (0, 1) even after parser fallbacks.
-    if value <= 0.2:
-        return 0.2
-    if value >= 0.8:
-        return 0.8
+    if value <= 0.11:
+        return 0.11
+    if value >= 0.89:
+        return 0.89
     return value
 
 
@@ -120,18 +133,16 @@ def run_task(http: httpx.Client, client: OpenAI, task_id: str) -> dict[str, Any]
     step_resp.raise_for_status()
     step_data = step_resp.json()
 
-    numeric_score = _normalize_strict_score(
-        float(step_data.get("score", step_data.get("reward", 0.5)))
-    )
-    raw_scores = step_data.get("scores")
-    if isinstance(raw_scores, dict):
-        score_payload = raw_scores
-    else:
-        score_payload = {
-            "correctness": numeric_score,
-            "tone": numeric_score,
-            "overall": numeric_score,
-        }
+    grader_fn = GRADER_MAP.get(task_id)
+    if grader_fn is None:
+        raise RuntimeError(f"No grader configured for task_id={task_id}")
+
+    numeric_score = _normalize_strict_score(float(grader_fn(action=assistant_action, observation=step_data)))
+    score_payload = {
+        "correctness": numeric_score,
+        "tone": numeric_score,
+        "overall": numeric_score,
+    }
 
     return {
         "task_id": task_id,
@@ -139,7 +150,7 @@ def run_task(http: httpx.Client, client: OpenAI, task_id: str) -> dict[str, Any]
         "task_score": numeric_score,
         "grader": f"app.graders:grade_{task_id}",
         "grader_enabled": True,
-        "reward": _normalize_strict_score(float(step_data.get("reward", numeric_score))),
+        "reward": numeric_score,
         "scores": score_payload,
         "done": step_data["done"],
     }
