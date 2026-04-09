@@ -10,7 +10,10 @@ app = FastAPI(title="Customer Support Chat Environment", version="0.1.0")
 
 
 def _normalize_step_score(value: Any) -> float:
-    score = float(value)
+    try:
+        score = float(value)
+    except (TypeError, ValueError):
+        score = 0.5
     if score <= 0:
         score = 0.2
     elif score >= 1:
@@ -85,7 +88,11 @@ def step(payload: StepRequest) -> StepResponse:
         action = _parse_step_action(payload)
         data = env.step(action)
 
-        score = _normalize_step_score(data.get("score", data.get("reward", 0.5)))
+        raw_score = data.get("score", data.get("reward", None))
+        if raw_score is None:
+            raw_score = 0.5
+
+        score = _normalize_step_score(raw_score)
         data["score"] = score
         data["reward"] = score
 
