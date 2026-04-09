@@ -104,7 +104,7 @@ def score_correctness(response: str, scenario: Scenario) -> float:
 def score_tone(response: str, scenario: Scenario) -> float:
     response_lower = response.lower()
     if not scenario.tone_requirements:
-        return MAX_STRICT_SCORE
+        return _strict_unit_interval(0.7)
 
     hits = 0
     for req in scenario.tone_requirements:
