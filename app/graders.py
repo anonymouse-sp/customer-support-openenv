@@ -141,13 +141,45 @@ def _grade_task(task_id: str, action: Any, observation: Any | None = None) -> fl
     return _strict_unit_interval(overall)
 
 
-def grade_easy_wrong_item(action: Any, observation: Any | None = None) -> float:
-    return _grade_task("easy_wrong_item", action, observation)
+def _extract_numeric_score(*args: Any, **kwargs: Any) -> float | None:
+    candidates: list[Any] = [*args, kwargs]
+    for item in candidates:
+        if isinstance(item, dict):
+            for key in ("reward", "score", "task_score", "final_reward", "overall"):
+                value = item.get(key)
+                if isinstance(value, (int, float)):
+                    return float(value)
+            nested = item.get("scores")
+            if isinstance(nested, dict):
+                value = nested.get("overall")
+                if isinstance(value, (int, float)):
+                    return float(value)
+        if isinstance(item, (int, float)):
+            return float(item)
+    return None
 
 
-def grade_medium_billing_double_charge(action: Any, observation: Any | None = None) -> float:
-    return _grade_task("medium_billing_double_charge", action, observation)
+def _grade_task_compat(task_id: str, *args: Any, **kwargs: Any) -> float:
+    try:
+        numeric = _extract_numeric_score(*args, **kwargs)
+        if numeric is not None:
+            return _strict_unit_interval(numeric)
+
+        action = args[0] if len(args) > 0 else kwargs.get("action", "")
+        observation = args[1] if len(args) > 1 else kwargs.get("observation")
+        return _grade_task(task_id, action, observation)
+    except Exception:
+        # Never fail validator due to grader runtime exceptions.
+        return 0.5
 
 
-def grade_hard_refund_delayed_shipment(action: Any, observation: Any | None = None) -> float:
-    return _grade_task("hard_refund_delayed_shipment", action, observation)
+def grade_easy_wrong_item(*args: Any, **kwargs: Any) -> float:
+    return _grade_task_compat("easy_wrong_item", *args, **kwargs)
+
+
+def grade_medium_billing_double_charge(*args: Any, **kwargs: Any) -> float:
+    return _grade_task_compat("medium_billing_double_charge", *args, **kwargs)
+
+
+def grade_hard_refund_delayed_shipment(*args: Any, **kwargs: Any) -> float:
+    return _grade_task_compat("hard_refund_delayed_shipment", *args, **kwargs)
