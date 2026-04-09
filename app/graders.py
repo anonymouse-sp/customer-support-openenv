@@ -87,7 +87,11 @@ def score_correctness(response: str, scenario: Scenario) -> float:
         if discouraged in response_lower:
             penalty += 0.2
 
-    return _strict_unit_interval(required_score - penalty)
+    safe_score = required_score - penalty
+    if safe_score <= 0:
+        safe_score = MIN_STRICT_SCORE
+
+    return _strict_unit_interval(safe_score)
 
 
 def score_tone(response: str, scenario: Scenario) -> float:
