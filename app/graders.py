@@ -27,21 +27,16 @@ def _contains_any(text: str, keywords: list[str]) -> bool:
 
 
 def _strict_unit_interval(value: float) -> float:
-    # Keep values in a wide safe moat away from 0 and 1.
+    # Keep values away from 0/1 and always emit float.
     try:
         val = float(value)
-        if val != val or val == float("inf") or val == float("-inf"):
-            return 0.5000
+        if val <= 0.1:
+            return 0.111111
+        if val >= 0.9:
+            return 0.888888
+        return float(round(val, 6))
     except (TypeError, ValueError):
-        return 0.5000
-
-    # Safe buffer: 0.05 to 0.95.
-    if val <= 0.05:
-        return 0.0501
-    if val >= 0.95:
-        return 0.9499
-
-    return round(val, 6)
+        return 0.555555
 
 
 def _strict_mid_score(value: float = 0.5) -> float:

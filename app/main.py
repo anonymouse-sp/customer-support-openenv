@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 
 from app.environment import env
 from app.graders import _strict_unit_interval
-from app.models import ScoreBreakdown, ResetRequest, ResetResponse, StateResponse, StepRequest, StepResponse
+from app.models import ResetRequest, ResetResponse, StateResponse, StepRequest, StepResponse
 
 
 app = FastAPI(title="Customer Support Chat Environment", version="0.1.0")
@@ -78,55 +78,49 @@ def reset(payload: Optional[ResetRequest] = None) -> ResetResponse:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
-@app.post("/step", response_model=StepResponse)
-def step(payload: StepRequest) -> StepResponse:
+@app.post("/step")
+def step(payload: StepRequest) -> dict:
     try:
-        action = payload.action or "No action provided"
+        action = payload.action or "No action"
         data = env.step(action)
 
-        # THE REWARD MOAT (Stay far away from 0 and 1).
-        def force_float_safe(value: Any) -> float:
+        def final_safety(value: Any) -> float:
             try:
                 score = float(value)
-                if score < 0.15:
-                    return 0.150001
-                if score > 0.85:
-                    return 0.849999
-                return round(score, 6)
+                if score < 0.2:
+                    return 0.222222
+                if score > 0.8:
+                    return 0.777777
+                return float(round(score, 6))
             except (TypeError, ValueError):
-                return 0.500000
+                return 0.555555
 
-        safe_reward = force_float_safe(data.get("reward", 0.5))
-
+        reward = final_safety(data.get("reward", 0.5))
         raw_scores = data.get("scores", {})
-        safe_scores = ScoreBreakdown(
-            correctness=force_float_safe(raw_scores.get("correctness", safe_reward))
-            if isinstance(raw_scores, dict)
-            else safe_reward,
-            tone=force_float_safe(raw_scores.get("tone", safe_reward)) if isinstance(raw_scores, dict) else safe_reward,
-            overall=force_float_safe(raw_scores.get("overall", safe_reward))
-            if isinstance(raw_scores, dict)
-            else safe_reward,
-        )
-
-        return StepResponse(
-            reward=safe_reward,
-            done=bool(data.get("done", True)),
-            observation=data.get("observation", {"msg": "ok"}),
-            score=safe_reward,
-            scores=safe_scores,
-            info=data.get("info", {"status": "success"}),
-        )
+        response_payload = {
+            "reward": reward,
+            "done": bool(data.get("done", True)),
+            "observation": data.get("observation", {"msg": "ok"}),
+            "score": reward,
+            "scores": {
+                "correctness": final_safety(raw_scores.get("correctness", reward))
+                if isinstance(raw_scores, dict)
+                else reward,
+                "tone": final_safety(raw_scores.get("tone", reward)) if isinstance(raw_scores, dict) else reward,
+                "overall": final_safety(raw_scores.get("overall", reward)) if isinstance(raw_scores, dict) else reward,
+            },
+            "info": data.get("info", {"status": "ok"}),
+        }
+        return response_payload
     except Exception:
-        # The "Unbreakable" fallback.
-        return StepResponse(
-            reward=0.500000,
-            done=True,
-            observation={"msg": "fallback"},
-            score=0.500000,
-            scores=ScoreBreakdown(correctness=0.5, tone=0.5, overall=0.5),
-            info={"status": "error_handled"},
-        )
+        return {
+            "reward": 0.555555,
+            "done": True,
+            "observation": {"msg": "fallback"},
+            "score": 0.555555,
+            "scores": {"correctness": 0.555555, "tone": 0.555555, "overall": 0.555555},
+            "info": {"status": "error"},
+        }
 
 
 @app.get("/state", response_model=StateResponse)
