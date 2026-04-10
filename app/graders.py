@@ -4,8 +4,8 @@ from app.models import Scenario
 from app.scenarios import SCENARIOS
 
 
-MIN_STRICT_SCORE = 0.01
-MAX_STRICT_SCORE = 0.99
+MIN_STRICT_SCORE = 0.1001
+MAX_STRICT_SCORE = 0.8999
 
 
 POSITIVE_TONE_HINTS = {
@@ -27,18 +27,20 @@ def _contains_any(text: str, keywords: list[str]) -> bool:
 
 
 def _strict_unit_interval(value: float) -> float:
-    # Phase-2 validator expects scores strictly between 0 and 1.
+    # Keep values in a wide safe moat away from 0 and 1.
     try:
-        value = float(value)
+        val = float(value)
+        if val != val or val == float("inf") or val == float("-inf"):
+            return 0.5000
     except (TypeError, ValueError):
         return 0.5000
 
-    # Use a wider window for RL training stability.
-    if value <= MIN_STRICT_SCORE:
-        return 0.0100
-    if value >= MAX_STRICT_SCORE:
-        return 0.9900
-    return round(value, 6)
+    if val <= 0.1:
+        return 0.1001
+    if val >= 0.9:
+        return 0.8999
+
+    return round(val, 4)
 
 
 def _strict_mid_score(value: float = 0.5) -> float:
