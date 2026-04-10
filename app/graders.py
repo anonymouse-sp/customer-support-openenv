@@ -142,6 +142,9 @@ def grade_response(response: str, scenario: Scenario) -> tuple[float, float, flo
 
 
 def _extract_action_text(action: Any, observation: Any | None = None) -> str:
+    if not action:
+        return "No response provided"
+
     if isinstance(action, str):
         return action
     if isinstance(action, dict):

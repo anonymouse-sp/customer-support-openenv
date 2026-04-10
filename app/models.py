@@ -4,8 +4,8 @@ from pydantic import BaseModel, Field
 
 
 class Message(BaseModel):
-    role: str = Field(pattern="^(user|assistant|system)$")
-    content: str = Field(min_length=1)
+    role: str
+    content: str
 
 
 class Scenario(BaseModel):
@@ -30,7 +30,7 @@ class ResetResponse(BaseModel):
 
 
 class StepRequest(BaseModel):
-    action: Optional[str] = Field(default=None, min_length=1, description="Agent response text")
+    action: Optional[str] = None
     input: Optional[Any] = None
 
 

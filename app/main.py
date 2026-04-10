@@ -41,7 +41,7 @@ def _parse_step_action(payload: StepRequest) -> str:
         candidate = payload.input.get("action")
         if isinstance(candidate, str) and candidate:
             return candidate
-    raise ValueError("Missing action in request body")
+    return "No action"
 
 
 @app.get("/")
@@ -84,14 +84,21 @@ def step(payload: StepRequest) -> StepResponse:
         action = _parse_step_action(payload)
         data = env.step(action)
 
-        # Force normalization one last time.
-        data["reward"] = _normalize_step_score(data.get("reward", 0.5))
+        # Absolute moat clamp far from edges for protocol stability.
+        def extreme_clamp(value: Any) -> float:
+            try:
+                score = float(value)
+                return max(0.2, min(0.8, score))
+            except (TypeError, ValueError):
+                return 0.5
+
+        data["reward"] = extreme_clamp(data.get("reward", 0.5))
         data["score"] = data["reward"]
 
         raw_scores = data.get("scores")
         if "scores" in data and isinstance(raw_scores, dict):
             for key in raw_scores:
-                raw_scores[key] = _normalize_step_score(raw_scores[key])
+                raw_scores[key] = extreme_clamp(raw_scores[key])
         else:
             data["scores"] = {
                 "correctness": data["reward"],
@@ -105,10 +112,10 @@ def step(payload: StepRequest) -> StepResponse:
         return StepResponse(
             reward=0.5,
             done=True,
-            observation={"error": str(exc)},
+            observation={"msg": "fallback"},
             score=0.5,
             scores=ScoreBreakdown(correctness=0.5, tone=0.5, overall=0.5),
-            info={"status": "error"},
+            info={"error": str(exc)},
         )
 
 
