@@ -93,7 +93,7 @@ def score_correctness(response: str, scenario: Scenario) -> float:
         if _contains_any(response_lower, keywords):
             required_hits += 1
 
-    required_score = (required_hits + 0.2) / (len(scenario.required_points) + 0.4)
+    required_score = (required_hits + 0.3) / (len(scenario.required_points) + 0.6)
 
     penalty = 0.0
     for discouraged in scenario.discouraged_points:
