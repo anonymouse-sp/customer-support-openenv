@@ -30,9 +30,9 @@ def _strict_unit_interval(value: float) -> float:
     # Keep values in a dead-center range to avoid edge-sensitive validators.
     try:
         val = float(value)
-        if val < 0.3:
-            return 0.333333
-        if val > 0.7:
+        if val < 0.2:
+            return 0.444444
+        if val > 0.8:
             return 0.666666
         return float(round(val, 6))
     except (TypeError, ValueError):
