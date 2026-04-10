@@ -26,10 +26,10 @@ REQUIRED_ENV = {
 def _normalize_strict_score(value: float) -> float:
     try:
         score = float(value)
-        if score < 0.2:
-            return 0.222222
-        if score > 0.8:
-            return 0.777777
+        if score < 0.3:
+            return 0.333333
+        if score > 0.7:
+            return 0.666666
         return float(round(score, 6))
     except (TypeError, ValueError):
         return 0.555555

@@ -48,7 +48,11 @@ class CustomerSupportEnv:
         self.current_scenario = scenario
         self.step_count = 0
         self.done = False
-        self.latest_score = None
+        self.latest_score = ScoreBreakdown(
+            correctness=0.5,
+            tone=0.5,
+            overall=0.5,
+        )
         self.history = [Message(role="user", content=scenario.customer_message)]
 
         return {

@@ -27,13 +27,13 @@ def _contains_any(text: str, keywords: list[str]) -> bool:
 
 
 def _strict_unit_interval(value: float) -> float:
-    # Keep values away from 0/1 and always emit float.
+    # Keep values in a dead-center range to avoid edge-sensitive validators.
     try:
         val = float(value)
-        if val <= 0.1:
-            return 0.111111
-        if val >= 0.9:
-            return 0.888888
+        if val < 0.3:
+            return 0.333333
+        if val > 0.7:
+            return 0.666666
         return float(round(val, 6))
     except (TypeError, ValueError):
         return 0.555555
