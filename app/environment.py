@@ -1,4 +1,4 @@
-from app.graders import _strict_unit_interval, grade_response
+from app.graders import grade_response
 from app.models import Message, Scenario, ScoreBreakdown
 from app.scenarios import SCENARIOS
 
@@ -76,16 +76,23 @@ class CustomerSupportEnv:
         self.history.append(Message(role="assistant", content=action))
 
         correctness, tone, overall = grade_response(action, self.current_scenario)
+
+        def inner_clamp(value: float) -> float:
+            val = float(value)
+            return float(max(0.33, min(0.66, val)))
+
+        safe_correctness = inner_clamp(correctness)
+        safe_tone = inner_clamp(tone)
+        safe_overall = inner_clamp(overall)
+
         self.latest_score = ScoreBreakdown(
-            correctness=correctness,
-            tone=tone,
-            overall=overall,
+            correctness=safe_correctness,
+            tone=safe_tone,
+            overall=safe_overall,
         )
 
         if self.step_count >= self.current_scenario.max_steps:
             self.done = True
-
-        safe_overall = _strict_unit_interval(overall)
 
         return {
             "reward": safe_overall,
@@ -95,7 +102,11 @@ class CustomerSupportEnv:
                 "assistant_response": action,
             },
             "score": safe_overall,
-            "scores": self.latest_score.model_dump(),
+            "scores": {
+                "correctness": safe_correctness,
+                "tone": safe_tone,
+                "overall": safe_overall,
+            },
             "info": {
                 "step_count": str(self.step_count),
                 "max_steps": str(self.current_scenario.max_steps),

@@ -88,24 +88,23 @@ def score_correctness(response: str, scenario: Scenario) -> float:
         if _contains_any(response_lower, keywords):
             required_hits += 1
 
-    required_score = (required_hits + 0.3) / (len(scenario.required_points) + 0.6)
+    # Force the base math away from edges even with zero matches.
+    raw_required = (required_hits + 0.4) / (len(scenario.required_points) + 0.8)
 
     penalty = 0.0
     for discouraged in scenario.discouraged_points:
         if discouraged in response_lower:
             penalty += 0.2
 
-    safe_score = required_score - penalty
-    if safe_score <= 0:
-        safe_score = MIN_STRICT_SCORE
+    safe_score = float(max(0.35, raw_required - penalty))
 
-    return _strict_unit_interval(safe_score)
+    return float(_strict_unit_interval(safe_score))
 
 
 def score_tone(response: str, scenario: Scenario) -> float:
     response_lower = response.lower()
     if not scenario.tone_requirements:
-        return _strict_unit_interval(0.7)
+        return float(_strict_unit_interval(0.66))
 
     hits = 0
     for req in scenario.tone_requirements:
@@ -117,23 +116,23 @@ def score_tone(response: str, scenario: Scenario) -> float:
     toxic_markers = ["stupid", "your fault", "can't help", "stop messaging"]
     toxic_hit = _contains_any(response_lower, toxic_markers)
 
-    score = (hits + 0.2) / (len(scenario.tone_requirements) + 0.4)
+    raw_score = (hits + 0.4) / (len(scenario.tone_requirements) + 0.8)
     if toxic_hit:
-        score = max(MIN_STRICT_SCORE, score - 0.5)
+        raw_score = max(0.31, raw_score - 0.3)
 
-    return _strict_unit_interval(score)
+    return float(_strict_unit_interval(raw_score))
 
 
 def grade_response(response: str, scenario: Scenario) -> tuple[float, float, float]:
     correctness = score_correctness(response, scenario)
     tone = score_tone(response, scenario)
-    overall = 0.7 * correctness + 0.3 * tone
+    overall = float(0.7 * correctness + 0.3 * tone)
     if overall <= 0:
         overall = MIN_STRICT_SCORE
     elif overall >= 1:
         overall = MAX_STRICT_SCORE
-    overall = _strict_unit_interval(overall)
-    return correctness, tone, overall
+    overall = float(_strict_unit_interval(overall))
+    return float(correctness), float(tone), float(overall)
 
 
 def _extract_action_text(action: Any, observation: Any | None = None) -> str:
@@ -179,17 +178,17 @@ def _grade_task(task_id: str, action: Any, observation: Any | None = None) -> fl
     scenario = SCENARIOS[task_id]
     response = _extract_action_text(action, observation)
     _correctness, _tone, overall = grade_response(response, scenario)
-    return _strict_unit_interval(overall)
+    return float(_strict_unit_interval(overall))
 
 
 def _grade_task_compat(task_id: str, *args: Any, **kwargs: Any) -> float:
     try:
         action = args[0] if len(args) > 0 else kwargs.get("action", "")
         observation = args[1] if len(args) > 1 else kwargs.get("observation")
-        return _grade_task(task_id, action, observation)
+        return float(_grade_task(task_id, action, observation))
     except Exception:
         # Never fail validator due to grader runtime exceptions.
-        return _strict_mid_score(0.5)
+        return float(_strict_mid_score(0.5))
 
 
 def grade_easy_wrong_item(*args: Any, **kwargs: Any) -> float:
