@@ -84,15 +84,27 @@ def step(payload: StepRequest) -> StepResponse:
         action = _parse_step_action(payload)
         data = env.step(action)
 
-        # Keep a deterministic safe score for validator compatibility.
-        safe_score = _normalize_step_score(data.get("score", 0.5))
+        raw_reward = data.get("reward", 0.5)
+        safe_score = _normalize_step_score(raw_reward)
         data["score"] = safe_score
         data["reward"] = safe_score
-        data["scores"] = {
-            "correctness": safe_score,
-            "tone": safe_score,
-            "overall": safe_score,
-        }
+
+        raw_scores = data.get("scores", {})
+        if isinstance(raw_scores, dict):
+            normalized_scores = {
+                key: _normalize_step_score(value) if isinstance(value, (int, float)) else safe_score
+                for key, value in raw_scores.items()
+            }
+            for key in ("correctness", "tone", "overall"):
+                if key not in normalized_scores:
+                    normalized_scores[key] = safe_score
+            data["scores"] = normalized_scores
+        else:
+            data["scores"] = {
+                "correctness": safe_score,
+                "tone": safe_score,
+                "overall": safe_score,
+            }
 
         return StepResponse(**data)
     except ValueError as exc:
