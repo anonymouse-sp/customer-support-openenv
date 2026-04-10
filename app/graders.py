@@ -4,8 +4,8 @@ from app.models import Scenario
 from app.scenarios import SCENARIOS
 
 
-MIN_STRICT_SCORE = 0.2
-MAX_STRICT_SCORE = 0.8
+MIN_STRICT_SCORE = 0.01
+MAX_STRICT_SCORE = 0.99
 
 
 POSITIVE_TONE_HINTS = {
@@ -31,15 +31,14 @@ def _strict_unit_interval(value: float) -> float:
     try:
         value = float(value)
     except (TypeError, ValueError):
-        return 0.5
+        return 0.5000
 
-    if value <= 0:
-        value = MIN_STRICT_SCORE
-    elif value >= 1:
-        value = MAX_STRICT_SCORE
-
-    value = max(0.21, min(0.79, value))
-    return round(value, 4)
+    # Use a wider window for RL training stability.
+    if value <= MIN_STRICT_SCORE:
+        return 0.0100
+    if value >= MAX_STRICT_SCORE:
+        return 0.9900
+    return round(value, 6)
 
 
 def _strict_mid_score(value: float = 0.5) -> float:
@@ -176,11 +175,10 @@ def _extract_action_text(action: Any, observation: Any | None = None) -> str:
 
 
 def _grade_task(task_id: str, action: Any, observation: Any | None = None) -> float:
-    # Keep exported task graders maximally robust for external validators.
-    # Some harnesses call graders with inconsistent payload shapes; returning a
-    # stable strict-unit score avoids boundary-value failures.
-    _ = task_id, action, observation
-    return _strict_mid_score(0.5)
+    scenario = SCENARIOS[task_id]
+    response = _extract_action_text(action, observation)
+    _correctness, _tone, overall = grade_response(response, scenario)
+    return _strict_unit_interval(overall)
 
 
 def _grade_task_compat(task_id: str, *args: Any, **kwargs: Any) -> float:

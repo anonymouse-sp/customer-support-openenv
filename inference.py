@@ -24,14 +24,13 @@ REQUIRED_ENV = {
 
 
 def _normalize_strict_score(value: float) -> float:
-    # Force safe precision and keep scores strictly inside (0, 1).
+    # Match grader strict interval behavior.
     value = float(value)
-    if value <= 0:
-        value = 0.2
-    elif value >= 1:
-        value = 0.8
-    value = round(value, 4)
-    return max(0.21, min(0.79, value))
+    if value <= 0.01:
+        return 0.01
+    if value >= 0.99:
+        return 0.99
+    return round(value, 6)
 
 
 def print_log(tag: str, payload: dict[str, Any]) -> None:

@@ -1,4 +1,4 @@
-from app.graders import grade_response
+from app.graders import _strict_unit_interval, grade_response
 from app.models import Message, Scenario, ScoreBreakdown
 from app.scenarios import SCENARIOS
 
@@ -81,14 +81,16 @@ class CustomerSupportEnv:
         if self.step_count >= self.current_scenario.max_steps:
             self.done = True
 
+        safe_overall = _strict_unit_interval(overall)
+
         return {
-            "reward": overall,
+            "reward": safe_overall,
             "done": self.done,
             "observation": {
                 "customer_message": self.current_scenario.customer_message,
                 "assistant_response": action,
             },
-            "score": overall,
+            "score": safe_overall,
             "scores": self.latest_score.model_dump(),
             "info": {
                 "step_count": str(self.step_count),
