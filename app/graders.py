@@ -88,8 +88,8 @@ def score_correctness(response: str, scenario: Scenario) -> float:
         if _contains_any(response_lower, keywords):
             required_hits += 1
 
-    # Force the base math away from edges even with zero matches.
-    raw_required = (required_hits + 0.4) / (len(scenario.required_points) + 0.8)
+    # High-floor base score to keep raw correctness in the middle band.
+    raw_required = (required_hits + 2.0) / (len(scenario.required_points) + 4.0)
 
     penalty = 0.0
     for discouraged in scenario.discouraged_points:

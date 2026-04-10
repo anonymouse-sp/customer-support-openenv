@@ -28,6 +28,10 @@ def final_safety(value: Any) -> float:
     except (TypeError, ValueError):
         return 0.555555
 
+
+def _as_six_decimal_float(value: Any) -> float:
+    return float(f"{final_safety(value):.6f}")
+
 def _parse_reset_task_id(payload: Optional[ResetRequest]) -> Optional[str]:
     if payload is None:
         return None
@@ -94,7 +98,7 @@ def step(payload: StepRequest) -> dict:
         action = payload.action or "No action"
         data = env.step(action)
 
-        reward = final_safety(data.get("reward", 0.5))
+        reward = _as_six_decimal_float(data.get("reward", 0.5))
         raw_scores = data.get("scores", {})
         response_payload = {
             "reward": reward,
@@ -102,11 +106,15 @@ def step(payload: StepRequest) -> dict:
             "observation": data.get("observation", {}),
             "score": reward,
             "scores": {
-                "correctness": final_safety(raw_scores.get("correctness", reward))
+                "correctness": _as_six_decimal_float(raw_scores.get("correctness", reward))
                 if isinstance(raw_scores, dict)
                 else reward,
-                "tone": final_safety(raw_scores.get("tone", reward)) if isinstance(raw_scores, dict) else reward,
-                "overall": final_safety(raw_scores.get("overall", reward)) if isinstance(raw_scores, dict) else reward,
+                "tone": _as_six_decimal_float(raw_scores.get("tone", reward))
+                if isinstance(raw_scores, dict)
+                else reward,
+                "overall": _as_six_decimal_float(raw_scores.get("overall", reward))
+                if isinstance(raw_scores, dict)
+                else reward,
             },
             "info": data.get("info", {}),
         }
