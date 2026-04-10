@@ -4,7 +4,7 @@ version: 0.1.0
 description: OpenEnv-compatible environment for customer support complaint handling.
 type: space
 runtime: fastapi
-app: server.app:app
+app: app.main:app
 port: 7860
 entrypoint:
   type: http

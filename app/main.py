@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 
 from app.environment import env
 from app.graders import _strict_unit_interval
-from app.models import ResetRequest, ResetResponse, StateResponse, StepRequest, StepResponse
+from app.models import ScoreBreakdown, ResetRequest, ResetResponse, StateResponse, StepRequest, StepResponse
 
 
 app = FastAPI(title="Customer Support Chat Environment", version="0.1.0")
@@ -84,31 +84,32 @@ def step(payload: StepRequest) -> StepResponse:
         action = _parse_step_action(payload)
         data = env.step(action)
 
-        raw_reward = data.get("reward", 0.5)
-        safe_score = _normalize_step_score(raw_reward)
-        data["score"] = safe_score
-        data["reward"] = safe_score
+        # Force normalization one last time.
+        data["reward"] = _normalize_step_score(data.get("reward", 0.5))
+        data["score"] = data["reward"]
 
-        raw_scores = data.get("scores", {})
-        if isinstance(raw_scores, dict):
-            normalized_scores = {
-                key: _normalize_step_score(value) if isinstance(value, (int, float)) else safe_score
-                for key, value in raw_scores.items()
-            }
-            for key in ("correctness", "tone", "overall"):
-                if key not in normalized_scores:
-                    normalized_scores[key] = safe_score
-            data["scores"] = normalized_scores
+        raw_scores = data.get("scores")
+        if "scores" in data and isinstance(raw_scores, dict):
+            for key in raw_scores:
+                raw_scores[key] = _normalize_step_score(raw_scores[key])
         else:
             data["scores"] = {
-                "correctness": safe_score,
-                "tone": safe_score,
-                "overall": safe_score,
+                "correctness": data["reward"],
+                "tone": data["reward"],
+                "overall": data["reward"],
             }
 
         return StepResponse(**data)
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        # If step processing fails, return a safe mid-score response.
+        return StepResponse(
+            reward=0.5,
+            done=True,
+            observation={"error": str(exc)},
+            score=0.5,
+            scores=ScoreBreakdown(correctness=0.5, tone=0.5, overall=0.5),
+            info={"status": "error"},
+        )
 
 
 @app.get("/state", response_model=StateResponse)

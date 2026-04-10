@@ -4,8 +4,8 @@ from app.models import Scenario
 from app.scenarios import SCENARIOS
 
 
-MIN_STRICT_SCORE = 0.1001
-MAX_STRICT_SCORE = 0.8999
+MIN_STRICT_SCORE = 0.0501
+MAX_STRICT_SCORE = 0.9499
 
 
 POSITIVE_TONE_HINTS = {
@@ -35,12 +35,13 @@ def _strict_unit_interval(value: float) -> float:
     except (TypeError, ValueError):
         return 0.5000
 
-    if val <= 0.1:
-        return 0.1001
-    if val >= 0.9:
-        return 0.8999
+    # Safe buffer: 0.05 to 0.95.
+    if val <= 0.05:
+        return 0.0501
+    if val >= 0.95:
+        return 0.9499
 
-    return round(val, 4)
+    return round(val, 6)
 
 
 def _strict_mid_score(value: float = 0.5) -> float:

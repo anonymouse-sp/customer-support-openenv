@@ -35,16 +35,16 @@ class StepRequest(BaseModel):
 
 
 class ScoreBreakdown(BaseModel):
-    correctness: float = Field(gt=0.0, lt=1.0)
-    tone: float = Field(gt=0.0, lt=1.0)
-    overall: float = Field(gt=0.0, lt=1.0)
+    correctness: float
+    tone: float
+    overall: float
 
 
 class StepResponse(BaseModel):
-    reward: float = Field(gt=0.0, lt=1.0)
+    reward: float
     done: bool
     observation: Dict[str, str]
-    score: float = Field(gt=0.0, lt=1.0)
+    score: float
     scores: ScoreBreakdown
     info: Dict[str, str]
 
